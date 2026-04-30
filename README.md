@@ -196,3 +196,49 @@ I named the assistant Livingstone. Like a helpful guide through your documents. 
 | **Livingstone** | "Let me check that for you. Looking at Remote_Policy.txt, remote work is only allowed on Mondays and Fridays. No mention of Wednesdays." |
 
 ---
+
+## Day 4 - Authentication + Rate Limiting ✅ COMPLETE
+
+### What I needed to do
+
+Right now, anyone who knows my computer address can use Livingstone. No password. No limits. That is fine for testing at home. But not for real use. I needed authentication and rate limiting.
+
+I wanted only authorized people to access Livingstone. And I wanted to prevent anyone from sending too many requests and abusing the system.
+
+### Tools I used in Day 4
+
+| Tool | What I used it for |
+|------|---------------------|
+| FastAPI Security | Built-in API key validation |
+| HTTPBearer | Extracts API key from request headers |
+| SlowAPI | Rate limiting middleware |
+| secrets module | Generate secure random API keys |
+| LocalStorage | Save API key in browser |
+
+### What I achieved in Day 4
+
+| What I achieved | Description |
+|-----------------|-------------|
+| API key authentication | Users must provide a valid key. No key = no access. |
+| 403 error messages | Clear message when API key is invalid |
+| Rate limiting | 100 requests per minute maximum |
+| 429 error messages | Clear message when rate limit exceeded |
+| Browser key storage | API key saved locally. Enter once, use forever. |
+| CORS middleware | Allows web page to talk to server |
+| Error handling | Graceful failures with helpful messages |
+
+### How authentication works
+User sends request with API key in header
+↓
+FastAPI checks if key matches SECRET_API_KEY
+↓
+If no match → 403 Forbidden
+↓
+If match → Process request
+↓
+Check rate limit → Under 100/min → Return answer
+↓
+Over 100/min → 429 Too Many Requests
+
+### The API key I created
+API_KEY = ASK ME FOR IT
