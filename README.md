@@ -242,3 +242,47 @@ Over 100/min → 429 Too Many Requests
 
 ### The API key I created
 API_KEY = ASK ME FOR IT
+
+---
+
+## Day 5 - MLflow Tracking + Analytics ✅ COMPLETE
+
+### What I needed to do
+
+Livingstone was working perfectly. But I had no idea how well it was performing. How long does each question take? Which questions are people asking? Which documents are most useful? I needed answers to these questions.
+
+I wanted to track every single interaction. Response times. Sources found. Questions asked. Answers given. Everything.
+
+### Tools I used in Day 5
+
+| Tool | What I used it for |
+|------|---------------------|
+| MLflow | Tracking every question and answer |
+| time module | Measuring response time |
+| uuid module | Generating unique session IDs |
+| datetime | Recording timestamps |
+
+### What I achieved in Day 5
+
+| What I achieved | Description |
+|-----------------|-------------|
+| MLflow installed | Tracking system ready |
+| Session tracking | Each user gets a unique ID |
+| Response time tracking | Every question's speed is measured |
+| Question logging | Every question saved |
+| Answer logging | Every answer saved as artifact |
+| Source tracking | Number of sources found recorded |
+| Analytics button | One-click access to MLflow dashboard |
+
+### How tracking works
+
+Every time someone asks a question, Livingstone records:
+
+| Data Tracked | How It's Used |
+|--------------|---------------|
+| Question text | Know what users are asking |
+| Answer text | Verify quality |
+| Response time | Measure performance |
+| Number of sources | See retrieval quality |
+| Session ID | Group questions by user |
+| Timestamp | Track usage patterns |

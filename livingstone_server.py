@@ -15,6 +15,10 @@ from chromadb.utils import embedding_functions
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import mlflow
+import time
+import uuid
+from datetime import datetime
 
 # Load API keys
 load_dotenv()
@@ -23,6 +27,16 @@ client = OpenAI(api_key=api_key)
 
 # Get the secret API key for authentication
 SECRET_API_KEY = os.getenv("API_KEY", "mylivingstonekey123")
+
+# Setup MLflow tracking
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "./mlflow_data")
+MLFLOW_EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "Livingstone_RAG_System")
+
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment(MLFLOW_EXPERIMENT_NAME)
+
+print(f"MLflow tracking URI: {MLFLOW_TRACKING_URI}")
+print(f"MLflow experiment: {MLFLOW_EXPERIMENT_NAME}")
 
 # Setup rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -201,7 +215,7 @@ async def home():
     </head>
     <body>
         <div class="container">
-            <h1>🧭 Livingstone</h1>
+            <h1>Livingstone</h1>
             <div class="subtitle">Your personal document assistant</div>
             
             <div class="api-key-input">
@@ -216,7 +230,7 @@ async def home():
             </div>
             
             <div class="answer-box" id="answerBox">
-                <div class="loading">💬 Enter your API key, then ask Livingstone a question</div>
+                <div class="loading">Enter your API key, then ask Livingstone a question</div>
             </div>
         </div>
         
@@ -232,6 +246,12 @@ async def home():
             }
             
             async function askLivingstone() {
+                let sessionID = localStorage.getItem('livingstone_session_id');
+                if (!sessionID) {
+                    sessionID = crypto.randomUUID();
+                    localStorage.setItem('livingstone_session_id', sessionID);
+                }
+                
                 const question = document.getElementById('question').value;
                 const apiKey = localStorage.getItem('livingstone_api_key');
                 
@@ -246,7 +266,7 @@ async def home():
                 }
                 
                 const answerBox = document.getElementById('answerBox');
-                answerBox.innerHTML = '<div class="loading">🤔 Livingstone is thinking...</div>';
+                answerBox.innerHTML = '<div class="loading">Livingstone is thinking...</div>';
                 
                 try {
                     const response = await fetch('/ask', {
@@ -255,21 +275,24 @@ async def home():
                             'Content-Type': 'application/json',
                             'Authorization': 'Bearer ' + apiKey
                         },
-                        body: JSON.stringify({question: question})
+                            body: JSON.stringify({
+                                question: question,
+                                session_id: sessionID
+                            })
                     });
                     
                     if (response.status === 403) {
-                        answerBox.innerHTML = '<div class="loading">❌ Invalid API key. Please check and save again. Use: mylivingstonekey123</div>';
+                        answerBox.innerHTML = '<div class="loading">Invalid API key. Please check and save again. Use: mylivingstonekey123</div>';
                         return;
                     }
                     
                     if (response.status === 429) {
-                        answerBox.innerHTML = '<div class="loading">⏰ Too many requests. Please wait a minute.</div>';
+                        answerBox.innerHTML = '<div class="loading">Too many requests. Please wait a minute.</div>';
                         return;
                     }
                     
                     if (!response.ok) {
-                        answerBox.innerHTML = '<div class="loading">❌ Server error. Check terminal for details.</div>';
+                        answerBox.innerHTML = '<div class="loading">Server error. Check terminal for details.</div>';
                         return;
                     }
                     
@@ -280,7 +303,7 @@ async def home():
                     `;
                 } catch (error) {
                     console.error('Error:', error);
-                    answerBox.innerHTML = '<div class="loading">❌ Connection error. Make sure server is running at localhost:8000</div>';
+                    answerBox.innerHTML = '<div class="loading">Connection error. Make sure server is running at localhost:8000</div>';
                 }
             }
             
@@ -304,17 +327,46 @@ async def home():
 @app.post("/ask")
 @limiter.limit("100/minute")
 async def ask(request: Request, api_key: str = Depends(verify_api_key)):
-    try:
-        data = await request.json()
-        question = data.get("question", "")
+    # Start timing the request
+    start_time = time.time()
+    
+    # Get the question from the request
+    data = await request.json()
+    question = data.get("question", "")
+    session_id = data.get("session_id", "unknown")
+    
+    if not question:
+        return {"answer": "Livingstone here! Please ask me a question.", "sources": []}
+    
+    # Search for relevant documents
+    search_results = search_documents(question)
+    
+    # Generate answer
+    answer, sources = generate_livingstone_answer(question, search_results)
+    
+    # Calculate response time
+    response_time = time.time() - start_time
+    
+    # Log to MLflow
+    with mlflow.start_run(run_name=f"Q_{session_id[:8]}"):
+        # Log parameters (inputs)
+        mlflow.log_param("question", question)
+        mlflow.log_param("session_id", session_id)
         
-        if not question:
-            return {"answer": "Livingstone here! Please ask me a question.", "sources": []}
+        # Log metrics (numbers)
+        mlflow.log_metric("response_time_seconds", response_time)
+        mlflow.log_metric("num_sources", len(sources))
+        mlflow.log_metric("num_chunks", len(search_results['documents'][0]) if search_results['documents'][0] else 0)
         
-        search_results = search_documents(question)
-        answer, sources = generate_livingstone_answer(question, search_results)
+        # Log artifacts (outputs)
+        mlflow.log_text(answer, "answer.txt")
+        mlflow.log_text(str(sources), "sources.txt")
         
-        return {"answer": answer, "sources": sources}
-    except Exception as e:
-        print(f"Error: {e}")
-        return {"answer": f"Livingstone hit an error: {str(e)}", "sources": []}
+        # Log tags (metadata)
+        mlflow.set_tag("timestamp", str(datetime.now()))
+        mlflow.set_tag("question_length", len(question))
+        mlflow.set_tag("answer_length", len(answer))
+    
+    print(f"📊 Logged to MLflow: Q={question[:50]}... | Time={response_time:.2f}s | Sources={len(sources)}")
+    
+    return {"answer": answer, "sources": sources}
