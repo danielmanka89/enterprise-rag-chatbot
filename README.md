@@ -242,3 +242,81 @@ Over 100/min → 429 Too Many Requests
 
 ### The API key I created
 API_KEY = ASK ME FOR IT
+
+---
+
+## Day 5 - MLflow Tracking + Analytics ✅ COMPLETE
+
+### What I needed to do
+
+Livingstone was working perfectly. But I had no idea how well it was performing. How long does each question take? Which questions are people asking? Which documents are most useful? I needed answers to these questions.
+
+I wanted to track every single interaction. Response times. Sources found. Questions asked. Answers given. Everything.
+
+### Tools I used in Day 5
+
+| Tool | What I used it for |
+|------|---------------------|
+| MLflow | Tracking every question and answer |
+| time module | Measuring response time |
+| uuid module | Generating unique session IDs |
+| datetime | Recording timestamps |
+
+### What I achieved in Day 5
+
+| What I achieved | Description |
+|-----------------|-------------|
+| MLflow installed | Tracking system ready |
+| Session tracking | Each user gets a unique ID |
+| Response time tracking | Every question's speed is measured |
+| Question logging | Every question saved |
+| Answer logging | Every answer saved as artifact |
+| Source tracking | Number of sources found recorded |
+| Analytics button | One-click access to MLflow dashboard |
+
+### How tracking works
+
+Every time someone asks a question, Livingstone records:
+
+| Data Tracked | How It's Used |
+|--------------|---------------|
+| Question text | Know what users are asking |
+| Answer text | Verify quality |
+| Response time | Measure performance |
+| Number of sources | See retrieval quality |
+| Session ID | Group questions by user |
+| Timestamp | Track usage patterns |
+
+---
+
+## Day 6 - Docker Containerization ✅ COMPLETE
+
+### What I needed to do
+
+Livingstone worked perfectly on my computer. But if I sent it to a friend, they would need to install Python, create virtual environments, install packages, and set up ChromaDB. Too many steps.
+
+I needed to package everything into one thing that works anywhere. No installation. No setup. Just run and use.
+
+### Tools I used in Day 6
+
+| Tool | What I used it for |
+|------|---------------------|
+| Docker Desktop | Runs containers on any computer |
+| Dockerfile | Instructions to build the container |
+| docker-compose.yml | Runs Livingstone + MLflow together |
+| .dockerignore | Excludes unnecessary files |
+
+### What I achieved in Day 6
+
+| What I achieved | Description |
+|-----------------|-------------|
+| Dockerfile created | Packages Python, packages, and code |
+| docker-compose.yml | Runs Livingstone and MLflow side by side |
+| One command startup | `docker-compose up` starts everything |
+| Portable Livingstone | Works on any computer with Docker |
+| No manual setup | No Python installation needed |
+
+### How to run Livingstone now
+
+```bash
+docker-compose up

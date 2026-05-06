@@ -1,0 +1,14 @@
+artifact_uri: /Users/daniel/Documents/GitHub/projects/enterprise-rag/mlflow_data/528960460468396225/775fe08d978d493a965fae7640db99d7/artifacts
+end_time: 1777611828292
+entry_point_name: ''
+experiment_id: '528960460468396225'
+lifecycle_stage: active
+run_id: 775fe08d978d493a965fae7640db99d7
+run_name: Q_a860d20b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777611828273
+status: 3
+tags: []
+user_id: daniel

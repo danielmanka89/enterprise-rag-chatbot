@@ -1,8 +1,3 @@
-"""
-Livingstone - Your Personal Document Assistant
-Day 4: Authentication + Rate Limiting (FIXED)
-"""
-
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,73 +11,40 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-# Load API keys
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
-
-# Get the secret API key for authentication
 SECRET_API_KEY = os.getenv("API_KEY", "mylivingstonekey123")
 
-# Setup rate limiter
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Livingstone Assistant")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Setup security
 security = HTTPBearer()
 
-# Verify API key function
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if credentials.credentials != SECRET_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
     return credentials.credentials
 
-# Livingstone's personality prompt
-LIVINGSTONE_PROMPT = """You are Livingstone, a friendly and helpful document assistant.
-
-Your personality:
-- You are warm and approachable
-- You always cite your sources
-- You say "Livingstone here!" at the start of responses
-
-Instructions:
-1. Answer based ONLY on the provided documents
-2. Always mention the source document name
-3. Be friendly and helpful
-4. If you cannot find the answer, say "Livingstone couldn't find that. Try rephrasing?""
-
-"""
+LIVINGSTONE_PROMPT = """You are Livingstone, a friendly and helpful document assistant. You say "Livingstone here!" at the start of responses. Answer based ONLY on the provided documents. Always mention the source document name. Be friendly and helpful."""
 
 # Setup ChromaDB
-try:
-    chroma_client = chromadb.PersistentClient(path="./chroma_db")
-    openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-        api_key=api_key,
-        model_name="text-embedding-3-small"
-    )
-    collection = chroma_client.get_collection(
-        name="company_policies",
-        embedding_function=openai_ef
-    )
-    print("✅ ChromaDB connected successfully")
-except Exception as e:
-    print(f"⚠️ ChromaDB error: {e}")
-    collection = None
+print("Connecting to ChromaDB...")
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
+openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+    api_key=api_key,
+    model_name="text-embedding-3-small"
+)
+collection = chroma_client.get_collection(
+    name="company_policies",
+    embedding_function=openai_ef
+)
+print(f"✅ ChromaDB connected with {collection.count()} documents")
 
 def search_documents(question, k=3):
-    if collection is None:
-        return {'documents': [[]], 'metadatas': [[]]}
     results = collection.query(query_texts=[question], n_results=k)
     return results
 
@@ -92,229 +54,72 @@ def generate_livingstone_answer(question, search_results):
     
     context_parts = []
     sources = []
-    for i, (doc, metadata) in enumerate(zip(
-        search_results['documents'][0],
-        search_results['metadatas'][0]
-    )):
+    for i, (doc, metadata) in enumerate(zip(search_results['documents'][0], search_results['metadatas'][0])):
         context_parts.append(f"[Document {i+1} - {metadata['source']}]:\n{doc}")
         sources.append(metadata['source'])
     
     context = "\n\n---\n\n".join(context_parts)
-    
-    prompt = f"""{LIVINGSTONE_PROMPT}
-
-DOCUMENTS:
-{context}
-
-USER QUESTION: {question}
-
-ANSWER:"""
+    prompt = f"{LIVINGSTONE_PROMPT}\n\nDOCUMENTS:\n{context}\n\nUSER QUESTION: {question}\n\nANSWER:"
     
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7
     )
-    
     return response.choices[0].message.content, list(set(sources))
 
-# Home page
 @app.get("/", response_class=HTMLResponse)
 async def home():
     return """
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Livingstone - Document Assistant</title>
+        <title>Livingstone</title>
         <style>
-            body {
-                font-family: Arial, sans-serif;
-                max-width: 800px;
-                margin: 50px auto;
-                padding: 20px;
-                background: #f0f2f5;
-            }
-            .container {
-                background: white;
-                border-radius: 15px;
-                padding: 30px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            h1 {
-                color: #4a5568;
-                text-align: center;
-            }
-            .subtitle {
-                text-align: center;
-                color: #718096;
-                margin-bottom: 30px;
-            }
-            input {
-                width: 70%;
-                padding: 12px;
-                font-size: 16px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-            }
-            button {
-                padding: 12px 24px;
-                font-size: 16px;
-                background: #4a5568;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                margin-left: 10px;
-            }
-            button:hover {
-                background: #2d3748;
-            }
-            .answer-box {
-                margin-top: 30px;
-                padding: 20px;
-                background: #f7fafc;
-                border-radius: 8px;
-                min-height: 150px;
-            }
-            .sources {
-                margin-top: 15px;
-                padding-top: 15px;
-                border-top: 1px solid #ddd;
-                color: #4a5568;
-                font-size: 14px;
-            }
-            .loading {
-                color: #a0aec0;
-                text-align: center;
-            }
-            .api-key-input {
-                margin-bottom: 20px;
-                padding: 10px;
-                background: #e6fffa;
-                border-radius: 8px;
-            }
-            .api-key-input input {
-                width: 60%;
-                margin-right: 10px;
-            }
+            body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; background: #f0f2f5; }
+            .container { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            input { width: 70%; padding: 12px; margin: 5px; }
+            button { padding: 12px 24px; background: #4a5568; color: white; border: none; border-radius: 8px; cursor: pointer; }
+            .answer-box { margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 8px; }
         </style>
     </head>
     <body>
         <div class="container">
             <h1>🧭 Livingstone</h1>
-            <div class="subtitle">Your personal document assistant</div>
-            
-            <div class="api-key-input">
-                <label>🔑 API Key: </label>
-                <input type="password" id="apiKey" placeholder="Enter your API key">
-                <button onclick="saveApiKey()">Save Key</button>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <input type="text" id="question" placeholder="Ask me anything..." style="width: 70%;">
-                <button onclick="askLivingstone()">Ask</button>
-            </div>
-            
-            <div class="answer-box" id="answerBox">
-                <div class="loading">💬 Enter your API key, then ask Livingstone a question</div>
-            </div>
+            <p>Your personal document assistant</p>
+            <div><input type="password" id="apiKey" placeholder="API Key"><button onclick="saveKey()">Save Key</button></div>
+            <div><input type="text" id="question" placeholder="Ask me anything..."><button onclick="ask()">Ask</button></div>
+            <div class="answer-box" id="answer">💬 Enter API key, then ask Livingstone a question</div>
         </div>
-        
         <script>
-            function saveApiKey() {
-                const apiKey = document.getElementById('apiKey').value;
-                if (!apiKey) {
-                    alert('Please enter an API key');
-                    return;
-                }
-                localStorage.setItem('livingstone_api_key', apiKey);
-                document.getElementById('answerBox').innerHTML = '<div class="loading">✅ API key saved! Now ask a question.</div>';
-            }
-            
-            async function askLivingstone() {
+            function saveKey() { localStorage.setItem('api_key', document.getElementById('apiKey').value); document.getElementById('answer').innerHTML = '✅ Key saved! Now ask a question.'; }
+            async function ask() {
+                const apiKey = localStorage.getItem('api_key');
+                if(!apiKey){ alert('Save API key first'); return; }
                 const question = document.getElementById('question').value;
-                const apiKey = localStorage.getItem('livingstone_api_key');
-                
-                if (!apiKey) {
-                    alert('Please enter and save your API key first');
-                    return;
-                }
-                
-                if (!question) {
-                    alert('Please type a question');
-                    return;
-                }
-                
-                const answerBox = document.getElementById('answerBox');
-                answerBox.innerHTML = '<div class="loading">🤔 Livingstone is thinking...</div>';
-                
-                try {
-                    const response = await fetch('/ask', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + apiKey
-                        },
-                        body: JSON.stringify({question: question})
-                    });
-                    
-                    if (response.status === 403) {
-                        answerBox.innerHTML = '<div class="loading">❌ Invalid API key. Please check and save again. Use: mylivingstonekey123</div>';
-                        return;
-                    }
-                    
-                    if (response.status === 429) {
-                        answerBox.innerHTML = '<div class="loading">⏰ Too many requests. Please wait a minute.</div>';
-                        return;
-                    }
-                    
-                    if (!response.ok) {
-                        answerBox.innerHTML = '<div class="loading">❌ Server error. Check terminal for details.</div>';
-                        return;
-                    }
-                    
-                    const data = await response.json();
-                    answerBox.innerHTML = `
-                        <div>${data.answer}</div>
-                        <div class="sources">📚 Sources: ${data.sources.join(', ')}</div>
-                    `;
-                } catch (error) {
-                    console.error('Error:', error);
-                    answerBox.innerHTML = '<div class="loading">❌ Connection error. Make sure server is running at localhost:8000</div>';
-                }
+                if(!question){ alert('Type a question'); return; }
+                document.getElementById('answer').innerHTML = '🤔 Livingstone is thinking...';
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                    body: JSON.stringify({question: question})
+                });
+                const data = await response.json();
+                document.getElementById('answer').innerHTML = `<div>${data.answer}</div><div style="margin-top:15px; color:#4a5568;">📚 Sources: ${data.sources.join(', ')}</div>`;
             }
-            
-            document.getElementById('question').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    askLivingstone();
-                }
-            });
-            
-            // Load saved API key on page load
-            const savedKey = localStorage.getItem('livingstone_api_key');
-            if (savedKey) {
-                document.getElementById('apiKey').value = savedKey;
-            }
+            document.getElementById('question').addEventListener('keypress', function(e) { if(e.key === 'Enter') ask(); });
         </script>
     </body>
     </html>
     """
 
-# API endpoint with authentication and rate limiting
 @app.post("/ask")
 @limiter.limit("100/minute")
 async def ask(request: Request, api_key: str = Depends(verify_api_key)):
-    try:
-        data = await request.json()
-        question = data.get("question", "")
-        
-        if not question:
-            return {"answer": "Livingstone here! Please ask me a question.", "sources": []}
-        
-        search_results = search_documents(question)
-        answer, sources = generate_livingstone_answer(question, search_results)
-        
-        return {"answer": answer, "sources": sources}
-    except Exception as e:
-        print(f"Error: {e}")
-        return {"answer": f"Livingstone hit an error: {str(e)}", "sources": []}
+    data = await request.json()
+    question = data.get("question", "")
+    if not question:
+        return {"answer": "Please ask a question.", "sources": []}
+    search_results = search_documents(question)
+    answer, sources = generate_livingstone_answer(question, search_results)
+    return {"answer": answer, "sources": sources}

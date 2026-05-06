@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+openai
+python-dotenv
+chromadb
+langchain
+pypdf
+tiktoken
+slowapi
+python-multipart
+mlflow

@@ -1,0 +1,21 @@
+services:
+  livingstone:
+    build: .
+    container_name: livingstone_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.env:/app/.env
+    environment:
+      - MLFLOW_TRACKING_URI=/app/mlflow_data
+    restart: unless-stopped
+
+  mlflow:
+    image: python:3.13-slim
+    container_name: mlflow_server
+    command: bash -c "pip install mlflow && mlflow ui --host 0.0.0.0 --port 5001 --backend-store-uri /mlflow_data"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./mlflow_data:/mlflow_data
+    restart: unless-stopped
