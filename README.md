@@ -59,7 +59,7 @@ The AI response includes the exact document names that were used.
 
 ---
 
-## Day 1 - Basic RAG with Keyword Search
+## Day 1 - Basic RAG with Keyword Search = COMPLETE
 
 ### What I needed to do
 
@@ -106,7 +106,7 @@ This showed me exactly what to fix in Day 2. Semantic search through embeddings.
 
 ---
 
-## Day 2 - ChromaDB + Semantic Search
+## Day 2 - ChromaDB + Semantic Search = COMPLETE
 
 ### What I needed to do
 
@@ -151,7 +151,7 @@ I chose ChromaDB as my vector database. It stores these number lists and can fin
 
 ---
 
-## Day 3 - Livingstone Web Interface
+## Day 3 - Livingstone Web Interface = COMPLETE
 
 ### What I needed to do
 
@@ -197,7 +197,7 @@ I named the assistant Livingstone. Like a helpful guide through your documents. 
 
 ---
 
-## Day 4 - Authentication + Rate Limiting ✅ COMPLETE
+## Day 4 - Authentication + Rate Limiting = COMPLETE
 
 ### What I needed to do
 
@@ -245,7 +245,7 @@ API_KEY = ASK ME FOR IT
 
 ---
 
-## Day 5 - MLflow Tracking + Analytics ✅ COMPLETE
+## Day 5 - MLflow Tracking + Analytics = COMPLETE
 
 ### What I needed to do
 
@@ -289,7 +289,7 @@ Every time someone asks a question, Livingstone records:
 
 ---
 
-## Day 6 - Docker Containerization ✅ COMPLETE
+## Day 6 - Docker Containerization = COMPLETE
 
 ### What I needed to do
 
@@ -320,3 +320,46 @@ I needed to package everything into one thing that works anywhere. No installati
 
 ```bash
 docker-compose up
+```
+
+---
+
+## Day 7 - AWS Deployment (ECR + ECS) = COMPLETE
+
+### What I needed to do
+
+Livingstone was running on my laptop. Only I could use it. I wanted to put it on the cloud so anyone could access it from anywhere, 24/7.
+
+### Tools I used in Day 7
+
+| Tool | What I used it for |
+|------|---------------------|
+| AWS ECR | Store Docker image in the cloud |
+| AWS ECS Fargate | Run the container without managing servers |
+| AWS IAM | Create roles for ECS to access resources |
+| AWS Security Groups | Control network access |
+| AWS CloudWatch | Monitor logs |
+| AWS CLI | Control AWS from terminal |
+
+### What I achieved in Day 7
+
+| What I achieved | Description |
+|-----------------|-------------|
+| AWS Account | Created and configured |
+| ECR Repository | `livingstone-app` created |
+| Docker Image | Built for AMD64 (AWS compatible) |
+| Image Pushed | Uploaded to ECR |
+| ECS Cluster | `livingstone-cluster` created |
+| Task Definition | CPU, memory, environment configured |
+| Security Group | Port 8000 opened for web traffic |
+| Service Created | Running on Fargate |
+| Architecture Fix | Solved ARM64 vs AMD64 mismatch |
+
+### What I learned
+
+AWS deployment is complex but powerful. The biggest challenge was the architecture mismatch - my Mac is ARM64, but AWS Fargate needs AMD64. Using `--platform linux/amd64` fixed it.
+
+ECR stores images. ECS runs them. IAM gives permissions. Security groups control access. Each piece has a specific job.
+
+### The architecture (simplified)
+Docker Image (AMD64) → ECR (Storage) → ECS Fargate (Compute) → Security Group (Firewall) → Public IP

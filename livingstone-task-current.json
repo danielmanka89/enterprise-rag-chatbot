@@ -1,0 +1,64 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:469935553054:task-definition/livingstone-task:1",
+    "containerDefinitions": [
+        {
+            "name": "livingstone",
+            "image": "469935553054.dkr.ecr.us-east-1.amazonaws.com/livingstone-app:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "OPENAI_API_KEY",
+                    "value": "YOUR_OPENAI_API_KEY_HERE"
+                },
+                {
+                    "name": "API_KEY",
+                    "value": "mylivingstonekey123"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "systemControls": []
+        }
+    ],
+    "family": "livingstone-task",
+    "executionRoleArn": "arn:aws:iam::469935553054:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "revision": 1,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "MANAGED_INSTANCES",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "512",
+    "registeredAt": "2026-05-06T00:14:26.228000-05:00",
+    "registeredBy": "arn:aws:iam::469935553054:root"
+}
