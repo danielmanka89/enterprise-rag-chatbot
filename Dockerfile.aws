@@ -1,0 +1,26 @@
+FROM python:3.13-slim
+
+# Declare build argument FIRST
+ARG OPENAI_API_KEY
+
+# Set as environment variable so it's available during build
+ENV OPENAI_API_KEY=$OPENAI_API_KEY
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY livingstone_server.py .
+
+# Create ChromaDB directory
+RUN mkdir -p /app/chroma_db
+
+# Copy and run the document addition script
+COPY add_docs.py /app/add_docs.py
+RUN python3 /app/add_docs.py
+
+EXPOSE 8000
+CMD ["uvicorn", "livingstone_server:app", "--host", "0.0.0.0", "--port", "8000"]

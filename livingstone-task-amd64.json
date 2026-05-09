@@ -1,0 +1,39 @@
+{
+    "family": "livingstone-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::469935553054:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "livingstone",
+            "image": "469935553054.dkr.ecr.us-east-1.amazonaws.com/livingstone-app:amd64",
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "OPENAI_API_KEY",
+                    "value": "YOUR_OPENAI_API_KEY_HERE"
+                },
+                {
+                    "name": "API_KEY",
+                    "value": "mylivingstonekey123"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/livingstone",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "livingstone"
+                }
+            }
+        }
+    ]
+}
