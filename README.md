@@ -363,3 +363,53 @@ ECR stores images. ECS runs them. IAM gives permissions. Security groups control
 
 ### The architecture (simplified)
 Docker Image (AMD64) → ECR (Storage) → ECS Fargate (Compute) → Security Group (Firewall) → Public IP
+
+---
+
+## Day 8 - CI/CD with GitHub Actions ✅ COMPLETE
+
+### What I needed to do
+
+Every time I changed Livingstone's code, I had to manually rebuild the Docker image, push it to ECR, and restart the ECS service. This was slow and error-prone.
+
+I wanted automation. Push code to GitHub. Everything else happens automatically.
+
+### Tools I used in Day 8
+
+| Tool | What I used it for |
+|------|---------------------|
+| GitHub Actions | Runs automation on every push |
+| AWS Secrets | Store AWS and OpenAI keys securely |
+| ECR | Stores Docker images |
+| ECS | Runs Livingstone |
+
+### What I achieved in Day 8
+
+| What I achieved | Description |
+|-----------------|-------------|
+| GitHub Actions workflow | Runs on every `git push` to main branch |
+| Automatic Docker build | Builds image with `--platform linux/amd64` |
+| Automatic ECR push | Pushes image with commit SHA and latest tag |
+| Automatic ECS update | Forces new deployment with latest image |
+| Secure secrets | AWS and OpenAI keys stored in GitHub Secrets |
+| Manual trigger | Can also run workflow manually |
+
+### How the CI/CD pipeline works
+git push to main
+↓
+GitHub Actions triggers
+↓
+Checkout code
+↓
+Configure AWS credentials (from secrets)
+↓
+Login to ECR
+↓
+Build Docker image (AMD64)
+↓
+Push image to ECR
+↓
+Update ECS service (force new deployment)
+↓
+Livingstone redeploys with new code
+
